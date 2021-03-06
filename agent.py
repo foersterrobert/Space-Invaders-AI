@@ -26,7 +26,7 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(6, 256, 3)
+        self.model = Linear_QNet(7, 256, 3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
@@ -34,6 +34,7 @@ class Agent:
         head = game.ship.center
         dir_l = game.ship.moving_left == True
         dir_r = game.ship.moving_right == True
+        dir_s = game.ship.moving_left == False and game.ship.moving_right == False
         alienlen10 = len(game.aliens) < 10
         alienlen5 = len(game.aliens) < 5
 
@@ -43,8 +44,9 @@ class Agent:
             alienlen5,
             dir_l,
             dir_r,
-            dir_l and (game.ship.rect.left == 0),
-            dir_r and (game.ship.rect.right == game.ship.screen_rect.right),
+            dir_s,
+            game.ship.rect.left == 0,
+            game.ship.rect.right == game.ship.screen_rect.right,
             ]
 
         return np.array(state, dtype=int)
@@ -98,6 +100,7 @@ def train():
 
         # perform move and get new state
         reward, done, score = game.check_events(final_move)
+        # print(score)
         state_new = agent.get_state(game)
 
         # train short memory
@@ -105,15 +108,12 @@ def train():
 
         # remember
         agent.remember(state_old, final_move, reward, state_new, done)
-        score = game.stats.score
-        # print(score)
 
         if done:
             # train long memory, plot result
             game.reset()
             agent.n_games += 1
             agent.train_long_memory()
-            print(score)
 
             if score > record:
                 record = score

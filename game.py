@@ -71,13 +71,14 @@ class SpaceInvadersAI:
         self.ship.update()
         H_R = self.update_bullets()
         self.fire_bullet()
+        Score = self.stats.score
         L = self.update_aliens()
         self.update_screen()
 
         if L == True:
             reward = -10
             game_over = True
-            return reward, game_over, self.stats.score
+            return reward, game_over, Score
 
         if H_R == 'Round':
             reward = 15
