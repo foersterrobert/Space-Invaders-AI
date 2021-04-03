@@ -26,7 +26,7 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(7, 256, 3)
+        self.model = Linear_QNet(4, 256, 3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
@@ -39,14 +39,14 @@ class Agent:
         alienlen5 = len(game.aliens) < 5
 
         state = [
-            # head,
-            alienlen10,
-            alienlen5,
+            head,
+            # alienlen10,
+            # alienlen5,
             dir_l,
             dir_r,
             dir_s,
-            game.ship.rect.left == 0,
-            game.ship.rect.right == game.ship.screen_rect.right,
+            # game.ship.rect.left == 0,
+            # game.ship.rect.right == game.ship.screen_rect.right,
             ]
 
         return np.array(state, dtype=int)

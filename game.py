@@ -31,6 +31,7 @@ class SpaceInvadersAI:
         self.play_button = button(self.ai_settings, self.screen, 'ye')
         self.bullet = bullet
         self.alien = alien
+        self.clock = pygame.time.Clock()
         self.run_game()
 
     def run_game(self):
@@ -65,7 +66,7 @@ class SpaceInvadersAI:
             self.ship.moving_left = True
             self.ship.moving_right = False
 
-        reward = -2
+        reward = -.5
         game_over = False
 
         self.ship.update()
@@ -76,7 +77,7 @@ class SpaceInvadersAI:
         self.update_screen()
 
         if L == True:
-            reward = -10
+            reward = -5
             game_over = True
             return reward, game_over, Score
 
