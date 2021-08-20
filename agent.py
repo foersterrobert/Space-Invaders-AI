@@ -3,16 +3,6 @@ import random
 import numpy as np
 from collections import deque
 from game import SpaceInvadersAI
-from settings import Settings
-from game_stats import GameStats
-from button import Button
-from scoreboard import Scoreboard
-from ship import Ship
-import game_functions as gf
-from pygame.sprite import Group
-from bullet import Bullet
-from alien import Alien
-
 from model import Linear_QNet, QTrainer
 from helper import plot
 
@@ -26,27 +16,29 @@ class Agent:
         self.epsilon = 0 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(4, 256, 3)
+        self.model = Linear_QNet(40, 256, 3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
     def get_state(self, game):
-        head = game.ship.center
+        pos = game.ship.center
         dir_l = game.ship.moving_left == True
         dir_r = game.ship.moving_right == True
         dir_s = game.ship.moving_left == False and game.ship.moving_right == False
-        alienlen10 = len(game.aliens) < 10
-        alienlen5 = len(game.aliens) < 5
+        alienstates = []
+        for i in range(game.get_number_rows(game.alien.rect.height) * game.get_number_aliens_x(game.alien.rect.width)):
+            try:
+                alienstates.append(game.aliens.sprites()[i].x)
+            except IndexError:
+                alienstates.append(0)
+
 
         state = [
-            head,
-            # alienlen10,
-            # alienlen5,
+            pos,
             dir_l,
             dir_r,
             dir_s,
-            # game.ship.rect.left == 0,
-            # game.ship.rect.right == game.ship.screen_rect.right,
+            *alienstates,
             ]
 
         return np.array(state, dtype=int)
@@ -90,7 +82,7 @@ def train():
     total_score = 0
     record = 0
     agent = Agent()
-    game = SpaceInvadersAI(Settings, gf, GameStats, Ship, Scoreboard, Button, Bullet, Alien)
+    game = SpaceInvadersAI()
     while True:
         # get old state
         state_old = agent.get_state(game)

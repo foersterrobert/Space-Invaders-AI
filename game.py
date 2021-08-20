@@ -1,36 +1,32 @@
 import pygame
-
 from settings import Settings
 from game_stats import GameStats
 from button import Button
 from scoreboard import Scoreboard
 from ship import Ship
-import game_functions as gf
 from pygame.sprite import Group
-
 import sys
 from time import sleep
 import numpy as np
 import pygame
 from bullet import Bullet
 from alien import Alien
+import math
 
 pygame.init()
 
 class SpaceInvadersAI:
-    def __init__(self, settings, gf, GameStats, ship, sb, button, bullet, alien):
-        self.gf = gf
-        self.ai_settings = settings()
+    def __init__(self):
+        self.ai_settings = Settings()
         self.screen = pygame.display.set_mode((self.ai_settings.screen_width, self.ai_settings.screen_height))
         pygame.display.set_caption("Alien Invasion")
         self.stats = GameStats(self.ai_settings)
-        self.sb = sb(self.ai_settings, self.screen, self.stats)
-        self.ship = ship(self.ai_settings, self.screen)
+        self.sb = Scoreboard(self.ai_settings, self.screen, self.stats)
+        self.ship = Ship(self.ai_settings, self.screen)
         self.aliens = Group()
         self.bullets = Group()
-        self.play_button = button(self.ai_settings, self.screen, 'ye')
-        self.bullet = bullet
-        self.alien = alien
+        self.play_button = Button(self.ai_settings, self.screen, 'ye')
+        self.alien = Alien(self.ai_settings, self.screen)
         self.clock = pygame.time.Clock()
         self.run_game()
 
@@ -46,7 +42,7 @@ class SpaceInvadersAI:
         self.sb.prep_ships()
         self.aliens.empty()
         self.bullets.empty()
-        self.gf.create_fleet(self.ai_settings, self.screen, self.ship, self.aliens)
+        self.create_fleet()
         self.ship.center_ship()
 
     def check_events(self, action):
@@ -77,7 +73,7 @@ class SpaceInvadersAI:
         self.update_screen()
 
         if L == True:
-            reward = -5
+            reward = -.5
             game_over = True
             return reward, game_over, Score
 
@@ -86,7 +82,7 @@ class SpaceInvadersAI:
             return reward, game_over, self.stats.score
 
         if H_R == 'Hit':
-            reward = 2
+            reward = 1 + math.log(Score)
             return reward, game_over, self.stats.score
 
         return reward, game_over, self.stats.score
@@ -130,7 +126,7 @@ class SpaceInvadersAI:
 
     def fire_bullet(self):
         if len(self.bullets) < self.ai_settings.bullets_allowed:
-            new_bullet = self.bullet(self.ai_settings, self.screen, self.ship)
+            new_bullet = Bullet(self.ai_settings, self.screen, self.ship)
             self.bullets.add(new_bullet)
 
 
@@ -147,7 +143,7 @@ class SpaceInvadersAI:
 
 
     def create_alien(self, alien_number, row_number):
-        alien = self.alien(self.ai_settings, self.screen)
+        alien = Alien(self.ai_settings, self.screen)
         alien_width = alien.rect.width
         alien.x = alien_width + 2 * alien_width * alien_number
         alien.rect.x = alien.x
@@ -156,9 +152,8 @@ class SpaceInvadersAI:
 
 
     def create_fleet(self):
-        alien = self.alien(self.ai_settings, self.screen)
-        number_aliens_x = self.get_number_aliens_x(alien.rect.width)
-        number_rows = self.get_number_rows(alien.rect.height)
+        number_aliens_x = self.get_number_aliens_x(self.alien.rect.width)
+        number_rows = self.get_number_rows(self.alien.rect.height)
 
         for row_number in range(number_rows):
             for alien_number in range(number_aliens_x):
@@ -197,27 +192,22 @@ class SpaceInvadersAI:
 
 
     def check_aliens_bottom(self):
-        L = False
         screen_rect = self.screen.get_rect()
         for alien in self.aliens.sprites():
             if alien.rect.bottom >= screen_rect.bottom:
                 self.ship_hit()
-                L = True
-                break
+                return True
 
-        return L
+        return False
 
 
     def update_aliens(self):
         self.check_fleet_edges()
         self.aliens.update()
-
         if pygame.sprite.spritecollideany(self.ship, self.aliens):
             self.ship_hit()
             return True
-
-        L = self.check_aliens_bottom()
-        return L
+        return self.check_aliens_bottom()
 
 
     def update_screen(self):
@@ -232,4 +222,4 @@ class SpaceInvadersAI:
         pygame.display.flip()
 
         
-game = SpaceInvadersAI(Settings, gf, GameStats, Ship, Scoreboard, Button, Bullet, Alien)
+game = SpaceInvadersAI()
