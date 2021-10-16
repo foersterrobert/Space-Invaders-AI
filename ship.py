@@ -9,7 +9,7 @@ class Ship(Sprite):
         self.ai_settings = ai_settings
         self.screen_rect = screen.get_rect()
 
-        self.image = pygame.image.load("./ship.bmp")
+        self.image = pygame.image.load("./ship.bmp").convert()
         self.rect = self.image.get_rect()
 
         self.rect.centerx = self.screen_rect.centerx

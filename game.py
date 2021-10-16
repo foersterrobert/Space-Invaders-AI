@@ -6,12 +6,10 @@ from scoreboard import Scoreboard
 from ship import Ship
 from pygame.sprite import Group
 import sys
-from time import sleep
 import numpy as np
 import pygame
 from bullet import Bullet
 from alien import Alien
-import math
 
 pygame.init()
 
@@ -27,10 +25,6 @@ class SpaceInvadersAI:
         self.bullets = Group()
         self.play_button = Button(self.ai_settings, self.screen, 'ye')
         self.alien = Alien(self.ai_settings, self.screen)
-        self.clock = pygame.time.Clock()
-        self.run_game()
-
-    def run_game(self):
         self.reset()
 
     def reset(self):
@@ -45,16 +39,12 @@ class SpaceInvadersAI:
         self.create_fleet()
         self.ship.center_ship()
 
-    def check_events(self, action):
+    def check_events(self, action, draw_screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 sys.exit()
 
-        if np.array_equal(action, [1, 0, 0]):
-            self.ship.moving_left = False
-            self.ship.moving_right = False
-
-        elif np.array_equal(action, [0, 1, 0]):
+        if np.array_equal(action, [1, 0]):
             self.ship.moving_left = False
             self.ship.moving_right = True
 
@@ -62,7 +52,7 @@ class SpaceInvadersAI:
             self.ship.moving_left = True
             self.ship.moving_right = False
 
-        reward = -.5
+        reward = 0
         game_over = False
 
         self.ship.update()
@@ -70,23 +60,22 @@ class SpaceInvadersAI:
         self.fire_bullet()
         Score = self.stats.score
         L = self.update_aliens()
-        self.update_screen()
+        if draw_screen:
+            self.update_screen()
 
         if L == True:
-            reward = -.5
+            reward = -10
             game_over = True
             return reward, game_over, Score
 
         if H_R == 'Round':
-            reward = 15
             return reward, game_over, self.stats.score
 
         if H_R == 'Hit':
-            reward = 1 + math.log(Score)
+            reward = 2
             return reward, game_over, self.stats.score
 
         return reward, game_over, self.stats.score
-
 
     def check_high_score(self):
         if self.stats.score > self.stats.high_score:
@@ -101,7 +90,6 @@ class SpaceInvadersAI:
 
         H_R = self.check_bullet_alien_collisions()
         return H_R
-
 
     def check_bullet_alien_collisions(self):
         collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
@@ -123,24 +111,20 @@ class SpaceInvadersAI:
             self.create_fleet()
         return col
 
-
     def fire_bullet(self):
         if len(self.bullets) < self.ai_settings.bullets_allowed:
             new_bullet = Bullet(self.ai_settings, self.screen, self.ship)
             self.bullets.add(new_bullet)
-
 
     def get_number_rows(self, alien_height):
         available_space_y = (self.ai_settings.screen_height - (3 * alien_height) - self.ship.rect.height) #ship.rect.height, alien.rect.height
         number_rows = int(available_space_y / (2 * alien_height))
         return number_rows
 
-
     def get_number_aliens_x(self, alien_width):
         available_space_x = self.ai_settings.screen_width - 2 * alien_width
         number_aliens_x = int(available_space_x / (2* alien_width))
         return number_aliens_x
-
 
     def create_alien(self, alien_number, row_number):
         alien = Alien(self.ai_settings, self.screen)
@@ -150,7 +134,6 @@ class SpaceInvadersAI:
         alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
         self.aliens.add(alien)
 
-
     def create_fleet(self):
         number_aliens_x = self.get_number_aliens_x(self.alien.rect.width)
         number_rows = self.get_number_rows(self.alien.rect.height)
@@ -158,25 +141,21 @@ class SpaceInvadersAI:
         for row_number in range(number_rows):
             for alien_number in range(number_aliens_x):
                 self.create_alien(alien_number, row_number)
-
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       
     def check_fleet_edges(self):
         for alien in self.aliens.sprites():
             if alien.check_edges():
                 self.change_fleet_direction()
                 break
 
-
     def change_fleet_direction(self):
         for alien in self.aliens.sprites():
             alien.rect.y += self.ai_settings.fleet_drop_speed
         self.ai_settings.fleet_direction *= -1
 
-
     def ship_hit(self):
         if self.stats.ships_left > 0:
             self.stats.ships_left -= 1
-
             self.sb.prep_ships()
 
         else:
@@ -188,9 +167,6 @@ class SpaceInvadersAI:
         self.create_fleet()
         self.ship.center_ship()
 
-        sleep(0.5)
-
-
     def check_aliens_bottom(self):
         screen_rect = self.screen.get_rect()
         for alien in self.aliens.sprites():
@@ -200,7 +176,6 @@ class SpaceInvadersAI:
 
         return False
 
-
     def update_aliens(self):
         self.check_fleet_edges()
         self.aliens.update()
@@ -209,17 +184,12 @@ class SpaceInvadersAI:
             return True
         return self.check_aliens_bottom()
 
-
     def update_screen(self):
         self.screen.fill(self.ai_settings.bg_color)
         for bullet in self.bullets.sprites():
             bullet.draw_bullet()
-
         self.ship.blitme()
         self.aliens.draw(self.screen)
         self.sb.show_score()
-
         pygame.display.flip()
-
         
-game = SpaceInvadersAI()

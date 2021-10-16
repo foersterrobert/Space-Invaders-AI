@@ -6,38 +6,29 @@ from game import SpaceInvadersAI
 from model import Linear_QNet, QTrainer
 from helper import plot
 
-MAX_MEMORY = 100_000
+MAX_MEMORY = 200_000
 BATCH_SIZE = 1000
 LR = 0.001
 
 class Agent:
     def __init__(self):
         self.n_games = 0
-        self.epsilon = 0 # randomness
-        self.gamma = 0.9 # discount rate
-        self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(40, 256, 3)
+        self.gamma = 0.95 # discount rate
+        self.memory = deque(maxlen=MAX_MEMORY)
+        self.model = Linear_QNet(37, 2)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
-
     def get_state(self, game):
-        pos = game.ship.center
-        dir_l = game.ship.moving_left == True
-        dir_r = game.ship.moving_right == True
-        dir_s = game.ship.moving_left == False and game.ship.moving_right == False
+        pos = round(game.ship.rect.right / game.screen.get_rect().right, 2)
         alienstates = []
         for i in range(game.get_number_rows(game.alien.rect.height) * game.get_number_aliens_x(game.alien.rect.width)):
             try:
-                alienstates.append(game.aliens.sprites()[i].x)
+                alienstates.append(round(game.aliens.sprites()[i].rect.right / game.screen.get_rect().right, 2))
             except IndexError:
                 alienstates.append(0)
 
-
         state = [
             pos,
-            dir_l,
-            dir_r,
-            dir_s,
             *alienstates,
             ]
 
@@ -61,20 +52,16 @@ class Agent:
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
-        # random moves: tradeoff exploration / exploitation
-        self.epsilon = 80 - self.n_games
-        final_move = [0,0,0]
-        if random.randint(0, 200) < self.epsilon:
-            move = random.randint(0, 2)
+        final_move = [0,0]
+        if random.randint(0, 200) < 60 - self.n_games:
+            move = random.randint(0, 1)
             final_move[move] = 1
         else:
             state0 = torch.tensor(state, dtype=torch.float)
             prediction = self.model(state0)
             move = torch.argmax(prediction).item()
             final_move[move] = 1
-
         return final_move
-
 
 def train():
     plot_scores = []
@@ -84,25 +71,14 @@ def train():
     agent = Agent()
     game = SpaceInvadersAI()
     while True:
-        # get old state
         state_old = agent.get_state(game)
-
-        # get move
         final_move = agent.get_action(state_old)
-
-        # perform move and get new state
-        reward, done, score = game.check_events(final_move)
-        # print(score)
+        reward, done, score = game.check_events(final_move, True if len(plot_scores) % 200 == 0 else False)
         state_new = agent.get_state(game)
-
-        # train short memory
         agent.train_short_memory(state_old, final_move, reward, state_new, done)
-
-        # remember
         agent.remember(state_old, final_move, reward, state_new, done)
 
         if done:
-            # train long memory, plot result
             game.reset()
             agent.n_games += 1
             agent.train_long_memory()
@@ -112,12 +88,11 @@ def train():
                 agent.model.save()
 
             print('Game', agent.n_games, 'Score', score, 'Record:', record)
-
             plot_scores.append(score)
             total_score += score
             mean_score = total_score / agent.n_games
             plot_mean_scores.append(mean_score)
-            plot(plot_scores, plot_mean_scores)
+            # plot(plot_scores, plot_mean_scores)
 
 
 if __name__ == '__main__':
