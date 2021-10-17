@@ -50,6 +50,7 @@ class QTrainer:
             reward = torch.unsqueeze(reward, 0)
             done = (done, )
 
+        self.optimizer.zero_grad()
         pred = self.model(state)
         target = pred.clone()
         for idx in range(len(done)):
@@ -59,7 +60,6 @@ class QTrainer:
 
             target[idx][torch.argmax(action[idx]).item()] = Q_new
 
-        self.optimizer.zero_grad()
         loss = self.criterion(target, pred)
         loss.backward()
         self.optimizer.step()

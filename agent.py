@@ -15,11 +15,12 @@ class Agent:
         self.n_games = 0
         self.gamma = 0.95 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)
-        self.model = Linear_QNet(37, 2)
+        self.model = Linear_QNet(38, 2)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game):
         pos = round(game.ship.rect.right / game.screen.get_rect().right, 2)
+        n_aliens = round(len(game.aliens.sprites()) / (game.get_number_rows(game.alien.rect.height) * game.get_number_aliens_x(game.alien.rect.width)), 2)
         alienstates = []
         for i in range(game.get_number_rows(game.alien.rect.height) * game.get_number_aliens_x(game.alien.rect.width)):
             try:
@@ -29,6 +30,7 @@ class Agent:
 
         state = [
             pos,
+            n_aliens,
             *alienstates,
             ]
 
@@ -53,7 +55,7 @@ class Agent:
 
     def get_action(self, state):
         final_move = [0,0]
-        if random.randint(0, 200) < 60 - self.n_games:
+        if random.randint(0, 200) < 80 - self.n_games:
             move = random.randint(0, 1)
             final_move[move] = 1
         else:

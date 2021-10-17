@@ -48,7 +48,7 @@ class SpaceInvadersAI:
             self.ship.moving_left = False
             self.ship.moving_right = True
 
-        else:
+        elif np.array_equal(action, [0, 1]):
             self.ship.moving_left = True
             self.ship.moving_right = False
 
