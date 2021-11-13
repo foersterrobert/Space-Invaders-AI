@@ -163,7 +163,6 @@ class SpaceInvadersAI:
 
         self.aliens.empty()
         self.bullets.empty()
-
         self.create_fleet()
         self.ship.center_ship()
 
@@ -173,7 +172,6 @@ class SpaceInvadersAI:
             if alien.rect.bottom >= screen_rect.bottom:
                 self.ship_hit()
                 return True
-
         return False
 
     def update_aliens(self):

@@ -6,21 +6,20 @@ from game import SpaceInvadersAI
 from model import Linear_QNet, QTrainer
 from helper import plot
 
-MAX_MEMORY = 200_000
+MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
 
 class Agent:
     def __init__(self):
         self.n_games = 0
-        self.gamma = 0.95 # discount rate
+        self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)
-        self.model = Linear_QNet(38, 2)
+        self.model = Linear_QNet(37, 2)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game):
         pos = round(game.ship.rect.right / game.screen.get_rect().right, 2)
-        n_aliens = round(len(game.aliens.sprites()) / (game.get_number_rows(game.alien.rect.height) * game.get_number_aliens_x(game.alien.rect.width)), 2)
         alienstates = []
         for i in range(game.get_number_rows(game.alien.rect.height) * game.get_number_aliens_x(game.alien.rect.width)):
             try:
@@ -30,11 +29,10 @@ class Agent:
 
         state = [
             pos,
-            n_aliens,
             *alienstates,
             ]
 
-        return np.array(state, dtype=int)
+        return np.array(state, dtype=np.float)
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done)) # popleft if MAX_MEMORY is reached
@@ -44,11 +42,8 @@ class Agent:
             mini_sample = random.sample(self.memory, BATCH_SIZE) # list of tuples
         else:
             mini_sample = self.memory
-
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
-        #for state, action, reward, nexrt_state, done in mini_sample:
-        #    self.trainer.train_step(state, action, reward, next_state, done)
 
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
@@ -75,20 +70,17 @@ def train():
     while True:
         state_old = agent.get_state(game)
         final_move = agent.get_action(state_old)
-        reward, done, score = game.check_events(final_move, True if len(plot_scores) % 200 == 0 else False)
+        reward, done, score = game.check_events(final_move, True)
         state_new = agent.get_state(game)
         agent.train_short_memory(state_old, final_move, reward, state_new, done)
         agent.remember(state_old, final_move, reward, state_new, done)
-
         if done:
             game.reset()
             agent.n_games += 1
             agent.train_long_memory()
-
             if score > record:
                 record = score
                 agent.model.save()
-
             print('Game', agent.n_games, 'Score', score, 'Record:', record)
             plot_scores.append(score)
             total_score += score
