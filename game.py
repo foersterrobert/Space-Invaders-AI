@@ -44,11 +44,10 @@ class SpaceInvadersAI:
             if event.type == pygame.QUIT:
                 sys.exit()
 
-        if np.array_equal(action, [1, 0]):
+        if action == 0:
             self.ship.moving_left = False
             self.ship.moving_right = True
-
-        elif np.array_equal(action, [0, 1]):
+        else:
             self.ship.moving_left = True
             self.ship.moving_right = False
 
@@ -69,10 +68,11 @@ class SpaceInvadersAI:
             return reward, game_over, Score
 
         if H_R == 'Round':
+            reward = 20
             return reward, game_over, self.stats.score
 
         if H_R == 'Hit':
-            reward = 2
+            reward = 1
             return reward, game_over, self.stats.score
 
         return reward, game_over, self.stats.score
@@ -95,7 +95,7 @@ class SpaceInvadersAI:
         collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True)
         col = False
         if collisions:
-            for aliens in collisions.values():
+            for alien in collisions.values():
                 self.stats.score += self.ai_settings.alien_points
                 self.sb.prep_score()
             self.check_high_score()
@@ -190,4 +190,19 @@ class SpaceInvadersAI:
         self.aliens.draw(self.screen)
         self.sb.show_score()
         pygame.display.flip()
+
+    def get_state(self):
+        pos = round(self.ship.rect.right / self.screen.get_rect().right, 2)
+        alienstates = []
+        for i in range(self.get_number_rows(self.alien.rect.height) * self.get_number_aliens_x(self.alien.rect.width)):
+            try:
+                alienstates.append(round(self.aliens.sprites()[i].rect.right / self.screen.get_rect().right, 2))
+            except IndexError:
+                alienstates.append(0)
+        state = [
+            pos,
+            *alienstates,
+            ]
+        return np.array(state, dtype=np.float)
+
         
